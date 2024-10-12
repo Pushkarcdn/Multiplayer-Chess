@@ -24,27 +24,42 @@ app.get("/", (req, res) => {
 });
 
 io.on("connection", (uniquesocket) => {
-    console.log("A user connected");
 
     if (!players.white) {
         players.white = uniquesocket.id;
         uniquesocket.emit("playerRole", "w");
+        console.log("White player connected");
     } else if (!players.black) {
         players.black = uniquesocket.id;
         uniquesocket.emit("playerRole", "b");
+        console.log("Black player connected");
     } else {
         uniquesocket.emit("spectatorRole");
+        uniquesocket.emit("boardState", chess.fen());  // Send current game state to the spectator
+        console.log("Spectator connected");
     }
 
-    uniquesocket.on("disconnect", () => {
+    if (players.white && players.black) {
+        io.emit("connection", "Connected!");
+    }
+
+    uniquesocket.on("disconnect", () => { 
         if (uniquesocket.id === players.white) {
             delete players.white;
+            io.emit("connection", "White player disconnected.");
+            chess.reset();
+            io.emit("boardState", chess.fen());
         } else if (uniquesocket.id === players.black) {
             delete players.black;
+            io.emit("connection", "Black player disconnected.");
+            chess.reset();
+            io.emit("boardState", chess.fen());
         }
     });
 
     uniquesocket.on("move", (move) => {
+
+        if (!players.white || !players.black) return
 
         try {
 
@@ -56,21 +71,23 @@ io.on("connection", (uniquesocket) => {
 
             if (result) {
                 currentPlayer = chess.turn()
+                io.emit("turn", currentPlayer);
                 io.emit("move", move);
                 io.emit("boardState", chess.fen());
             } else {
                 console.log("Invalid move: ", move);
                 uniquesocket.emit("invalidMove: ", move);
-            } 
+            }
 
         } catch (err) {
 
             console.log(err);
-            uniquesocket.emit("invalidMove: ", move); 
+            uniquesocket.emit("invalidMove: ", move);
 
         }
 
     });
+
 });
 
 server.listen(port, () => {

@@ -40,7 +40,7 @@ const renderboard = () => {
                 pieceElement.innerText = getPieceUnicode(square);
                 pieceElement.draggable = playerRole === square.color;
 
-                pieceElement.addEventListener("dragstart", () => {
+                pieceElement.addEventListener("dragstart", (e) => {
 
                     if (pieceElement.draggable) {
                         draggedPiece = pieceElement;
@@ -139,12 +139,18 @@ const getPieceUnicode = (piece) => {
 }
 
 socket.on("playerRole", (role) => {
+
+    console.log("role: ", role);
+
     playerRole = role;
+
     renderboard();
+
 });
 
 socket.on("spectatorRole", () => {
     playerRole = null;
+    document.querySelector("#role").innerText = "You are a spectator";
     renderboard();
 })
 
@@ -158,5 +164,41 @@ socket.on("move", (move) => {
     renderboard();
 });
 
+socket.on("message", (message) => {
+    document.querySelector("#message").innerText = message;
+});
+
+socket.on("connection", (msg) => {
+
+    if(playerRole === 'spectator') {
+        document.querySelector("#connection").innerText = "";
+    }
+
+    document.querySelector("#connection").innerText = msg;
+
+    if (playerRole === 'w') {
+        // document.querySelector("#role").innerText = `You are white`;
+        document.querySelector("#status").innerText = "Your turn!";
+    } else if (playerRole === 'b') {
+        // document.querySelector("#role").innerText = `You are black`;
+        document.querySelector("#status").innerText = "Opponent's turn!";
+    } else {
+        document.querySelector("#status").innerText = "";
+        document.querySelector("#connection").innerText = "";
+    }
+
+});
+
+socket.on("turn", (turn) => {
+
+    if (!playerRole) return
+
+    if (playerRole === turn) {
+        document.querySelector("#status").innerText = "Your turn";
+    } else {
+        document.querySelector("#status").innerText = "Opponent's turn";
+    }
+
+});
 
 renderboard();
