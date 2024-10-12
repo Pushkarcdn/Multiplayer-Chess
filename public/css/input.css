@@ -7,8 +7,8 @@
     display: grid;
     grid-template-columns: repeat(8, minmax(0, 1fr));
     grid-template-rows: repeat(8, minmax(0, 1fr));
-    width: 400px;
-    height: 400px;
+    /* width: 400px;
+    height: 400px; */
     transform: rotate(0deg);
 }
 
@@ -41,7 +41,7 @@
 }
 
 .piece {
-    font-size: 36px;
+    @apply text-2xl sm:text-3xl;
     cursor: pointer;
 }
 
