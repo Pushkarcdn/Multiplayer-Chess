@@ -9,15 +9,13 @@ let sourceSquare = null;
 let playerRole = null;
 
 const renderboard = () => {
-
     const board = chess.board();
-
     boardElement.innerHTML = "";
 
+    let targetSquare = null; // To store the target square during touchmove
+
     board.forEach((row, rowindex) => {
-
         row.forEach((square, squareindex) => {
-
             const squareElement = document.createElement("div");
 
             squareElement.classList.add(
@@ -29,73 +27,94 @@ const renderboard = () => {
             squareElement.dataset.col = squareindex;
 
             if (square) {
-
                 const pieceElement = document.createElement("div");
 
                 pieceElement.classList.add(
                     "piece",
-                    square.color === "w" ? "white" : "black",
+                    square.color === "w" ? "white" : "black"
                 );
 
                 pieceElement.innerText = getPieceUnicode(square);
                 pieceElement.draggable = playerRole === square.color;
 
+                // Mouse drag events
                 pieceElement.addEventListener("dragstart", (e) => {
-
                     if (pieceElement.draggable) {
                         draggedPiece = pieceElement;
                         sourceSquare = {
                             row: rowindex,
                             col: squareindex
-                        }
+                        };
                         e.dataTransfer.setData("text/plain", "");
                     }
                 });
 
-                pieceElement.addEventListener("dragend", (e) => {
+                pieceElement.addEventListener("dragend", () => {
                     draggedPiece = null;
                     sourceSquare = null;
                 });
 
-                squareElement.appendChild(pieceElement);
+                // Touch start event
+                pieceElement.addEventListener("touchstart", (e) => {
+                    if (pieceElement.draggable) {
+                        draggedPiece = pieceElement;
+                        sourceSquare = {
+                            row: rowindex,
+                            col: squareindex
+                        };
+                        e.preventDefault(); // Prevent scrolling on touch
+                    }
+                });
 
+                // Append the piece to the square
+                squareElement.appendChild(pieceElement);
             }
 
+            // Handle dragover for mouse drop
             squareElement.addEventListener("dragover", (e) => {
                 e.preventDefault();
             });
 
+            // Handle mouse drop
             squareElement.addEventListener("drop", (e) => {
-
                 e.preventDefault();
-
                 if (!draggedPiece) return;
 
                 const targetSquare = {
                     row: parseInt(squareElement.dataset.row),
                     col: parseInt(squareElement.dataset.col)
-                }
+                };
+                handleMove(sourceSquare, targetSquare);
+            });
 
-                const move = {
-                    from: {
-                        row: sourceSquare.row,
-                        col: sourceSquare.col
-                    },
-                    to: {
-                        row: targetSquare.row,
-                        col: targetSquare.col
-                    }
+            // Track the target square during touch move without moving the piece
+            squareElement.addEventListener("touchmove", (e) => {
+                e.preventDefault(); // Prevent default scrolling behavior
+                const touch = e.touches[0];
+                const target = document.elementFromPoint(touch.clientX, touch.clientY);
+
+                if (target && target.classList.contains('square')) {
+                    targetSquare = {
+                        row: parseInt(target.dataset.row),
+                        col: parseInt(target.dataset.col)
+                    };
                 }
+            });
+
+            // Perform the move when the user lifts their finger (touchend)
+            squareElement.addEventListener("touchend", () => {
+                if (!draggedPiece || !targetSquare) return;
 
                 handleMove(sourceSquare, targetSquare);
 
-
+                // Reset after the move
+                draggedPiece = null;
+                sourceSquare = null;
+                targetSquare = null;
             });
 
             boardElement.appendChild(squareElement);
-
         });
-
     });
 
     if (playerRole === 'b') {
@@ -103,8 +122,7 @@ const renderboard = () => {
     } else {
         boardElement.classList.remove("flipped");
     }
-
-}
+};
 
 const handleMove = (source, target) => {
 
